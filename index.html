@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c4d6b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Arazi Tespit Tutanağı</title>
+<style>
+:root {
+  /* Saha aracı: güneşte okunur yüksek kontrast, büyük dokunma alanları; solda çiftçiler, sağda parseller. */
+  --bg: #eceff0;
+  --surface: #ffffff;
+  --ink: #16201c;
+  --muted: #56635d;
+  --line: #d2d9d6;
+  --accent: #1c4d6b;
+  --accent-ink: #ffffff;
+  --ok: #18733a;
+  --ok-bg: #e2f1e6;
+  --no: #b3261e;
+  --no-bg: #fbe8e6;
+  --ed: #8a5a00;
+  --ed-bg: #fff2d1;
+  --soft: #f4f6f6;
+  --shadow: 0 1px 2px rgba(20, 30, 26, .08), 0 2px 8px rgba(20, 30, 26, .06);
+  --font-display: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #1a2220; --ink: #e7ecea; --muted: #9aa8a2; --line: #2e3a36;
+    --accent: #7db7d9; --accent-ink: #0d1a22; --ok: #5fcf86; --ok-bg: #173323; --no: #ff8a80; --no-bg: #3a1c1a;
+    --ed: #f2c14e; --ed-bg: #3a2f12; --soft: #202a27; --shadow: 0 1px 2px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #1a2220; --ink: #e7ecea; --muted: #9aa8a2; --line: #2e3a36;
+  --accent: #7db7d9; --accent-ink: #0d1a22; --ok: #5fcf86; --ok-bg: #173323; --no: #ff8a80; --no-bg: #3a1c1a;
+  --ed: #f2c14e; --ed-bg: #3a2f12; --soft: #202a27; --shadow: 0 1px 2px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.35; -webkit-tap-highlight-color: transparent; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+.top { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); min-height: 60px; flex-wrap: wrap; }
+.top h1 { font-size: 22px; font-weight: 700; }
+.top .doc { color: var(--muted); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34ch; }
+.top .grow { flex: 1; }
+.prog { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--muted); }
+.bar { width: 140px; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 16px; }
+.btn:hover { background: var(--soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.danger { color: var(--no); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.btn svg { width: 20px; height: 20px; }
+
+/* Ana ekran */
+.home { overflow: auto; padding: 24px 16px 48px; }
+.home-inner { max-width: 880px; margin: 0 auto; display: grid; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.drop { padding: 28px; display: grid; gap: 16px; }
+.drop h2 { font-size: 28px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 4px 0 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { background: var(--soft); border-radius: 10px; padding: 12px 14px; font-size: 15px; color: var(--muted); counter-increment: s; }
+.steps li::before { content: counter(s); display: block; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--accent); }
+.drop .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.note { font-size: 14px; color: var(--muted); }
+.err { color: var(--no); font-weight: 600; }
+.status { font-size: 15px; color: var(--muted); }
+.saved h3 { font-size: 20px; padding: 16px 20px 8px; }
+.saved ul { list-style: none; margin: 0; padding: 0 8px 8px; }
+.saved li { display: flex; align-items: center; gap: 12px; padding: 12px; border-top: 1px solid var(--line); }
+.saved li:first-child { border-top: 0; }
+.saved .meta { flex: 1; min-width: 0; }
+.saved .meta b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved .meta span { font-size: 14px; color: var(--muted); }
+
+/* Çalışma ekranı */
+.work { display: grid; grid-template-columns: 330px 1fr; min-height: 0; }
+.side { border-right: 1px solid var(--line); background: var(--surface); display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; }
+.side .search { padding: 12px 12px 8px; }
+.side input[type=search] { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 14px; background: var(--soft); }
+.chips { display: flex; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
+.chip { flex: none; min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.flist { overflow: auto; list-style: none; margin: 0; padding: 0 0 12px; border-top: 1px solid var(--line); }
+.flist li button { width: 100%; text-align: left; display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; }
+.flist li button[aria-current="true"] { background: var(--soft); box-shadow: inset 4px 0 0 var(--accent); }
+.flist .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.flist .dot.part { background: var(--ed); }
+.flist .dot.done { background: var(--ok); }
+.flist b { display: block; font-weight: 600; font-size: 16px; }
+.flist small { color: var(--muted); font-size: 13px; }
+.flist .cnt { font-size: 14px; color: var(--muted); text-align: right; }
+.flist .cnt em { display: block; font-style: normal; color: var(--no); font-weight: 600; font-size: 13px; }
+.side .foot { padding: 10px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+
+.main { overflow: auto; min-height: 0; }
+.main-inner { max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; display: grid; gap: 14px; }
+.fhead { padding: 16px 18px; display: grid; gap: 10px; }
+.fhead .l1 { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.fhead h2 { font-size: 30px; line-height: 1.1; }
+.fhead .koy { color: var(--muted); font-weight: 600; }
+.facts { display: flex; gap: 8px 22px; flex-wrap: wrap; font-size: 15px; color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; }
+.fhead .acts { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 14px; background: var(--soft); color: var(--muted); }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.no { background: var(--no-bg); color: var(--no); }
+.pill.ed { background: var(--ed-bg); color: var(--ed); }
+
+.rows { display: grid; gap: 10px; }
+.prow { display: grid; grid-template-columns: 52px 1fr auto; gap: 4px 14px; align-items: center; padding: 12px 14px 12px 0; border-left: 6px solid transparent; }
+.prow.m-plus { border-left-color: var(--ok); }
+.prow.m-minus { border-left-color: var(--no); }
+.prow.m-edit { border-left-color: var(--ed); }
+.prow .sira { justify-self: center; font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--muted); }
+.prow .info { min-width: 0; display: grid; gap: 2px; }
+.prow .ap { font-size: 19px; font-weight: 700; }
+.prow .ap span { color: var(--muted); font-weight: 500; font-size: 15px; }
+.prow .urun { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+.prow .urun b { color: var(--ink); font-weight: 600; }
+.marks { display: flex; gap: 8px; }
+.mk { width: 76px; height: 64px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; align-content: center; gap: 0; line-height: 1; }
+.mk .s { font-size: 30px; font-weight: 700; }
+.mk .t { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 3px; }
+.mk.plus[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.mk.minus[aria-pressed="true"] { background: var(--no); border-color: var(--no); color: #fff; }
+.mk[aria-pressed="true"] .t { color: inherit; }
+.tsp { grid-column: 2 / 4; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+.tsp .val { padding: 6px 10px; border-radius: 8px; background: var(--soft); overflow-wrap: anywhere; }
+.m-plus .tsp .val { background: var(--ok-bg); }
+.m-minus .tsp .val { background: var(--no-bg); }
+.m-edit .tsp .val { background: var(--ed-bg); }
+.tsp .lnk { border: 0; background: none; color: var(--accent); font-weight: 600; min-height: 36px; padding: 0 6px; text-decoration: underline; text-underline-offset: 3px; }
+.next { display: flex; justify-content: flex-end; }
+
+.back { display: none; }
+
+/* Diyaloglar */
+.dlg { position: fixed; inset: 0; background: rgba(10, 16, 14, .5); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.dlg[hidden] { display: none; }
+.dlg .box { width: min(560px, 100%); max-height: calc(100% - 32px); overflow: auto; background: var(--surface); border-radius: 16px; padding: 20px; display: grid; gap: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.dlg h3 { font-size: 24px; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.field input, .field select, .field textarea { min-height: 48px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--soft); width: 100%; }
+.field textarea { min-height: 72px; resize: vertical; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dlg .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.dlg .acts .left { margin-right: auto; }
+fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: grid; gap: 12px; }
+legend { font-weight: 700; padding: 0 6px; }
+.sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sum div { background: var(--soft); border-radius: 10px; padding: 10px; text-align: center; }
+.sum b { display: block; font-family: var(--font-display); font-size: 26px; }
+.sum span { font-size: 13px; color: var(--muted); }
+.warn { background: var(--ed-bg); color: var(--ed); padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+.okmsg { background: var(--ok-bg); color: var(--ok); padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+
+@media (max-width: 900px) {
+  .work { grid-template-columns: 1fr; }
+  .work.show-list .main { display: none; }
+  .work.show-detail .side { display: none; }
+  .back { display: inline-flex; }
+  .top .doc { display: none; }
+  .bar { width: 80px; }
+}
+@media (max-width: 560px) {
+  .steps { grid-template-columns: 1fr; }
+  .prow { grid-template-columns: 40px 1fr; }
+  .marks { grid-column: 1 / 3; justify-content: flex-end; }
+  .tsp { grid-column: 1 / 3; padding-left: 14px; }
+  .mk { flex: 1; width: auto; }
+  .marks { width: 100%; }
+  .grid2, .sum { grid-template-columns: 1fr 1fr; }
+  .top .btn .lbl { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mk, .btn, .chip { transition: background-color .12s, border-color .12s, color .12s; }
+}
+/* v2 eklemeleri */
+.seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.prow .who { font-size: 15px; color: var(--ink); font-weight: 600; }
+.prow .who span { color: var(--muted); font-weight: 500; }
+.prow .where { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--accent); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+.prow.auto { border-left-color: var(--ok); opacity: .82; }
+.auto-tag { font-size: 13px; color: var(--ok); font-weight: 700; }
+.toggle[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.empty { padding: 28px; text-align: center; color: var(--muted); }
+.docrow { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.docrow .dn { font-weight: 700; overflow-wrap: anywhere; }
+.docrow .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.savestate { font-size: 14px; font-weight: 600; color: var(--muted); }
+.savestate.ok { color: var(--ok); }
+.savestate.ed { color: var(--ed); }
+.savestate.no { color: var(--no); }
+.btn.save { border-color: var(--ok); color: var(--ok); }
+.brk { display: none; }
+@media (max-width: 1440px) { #filesBtn .lbl, #setBtn .lbl { display: none; } #filesBtn, #setBtn { padding: 0 13px; } }
+@media (max-width: 900px) { .top h1 { display: none; } }
+@media (max-width: 1360px) {
+  .brk { display: block; flex-basis: 100%; height: 0; order: 9; }
+  .prog, .savestate { order: 10; }
+}
+.adachips { display: flex; flex-wrap: wrap; gap: 8px; }
+.adachip { min-width: 68px; min-height: 54px; padding: 4px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.05; display: grid; place-items: center; align-content: center; font-variant-numeric: tabular-nums; }
+.adachip small { display: block; font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--muted); }
+.adachip.all { font-size: 16px; }
+.adachip.part { border-color: var(--ed); }
+.adachip.done { border-color: var(--ok); color: var(--ok); }
+.adachip.done small { color: var(--ok); }
+.adachip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.adachip[aria-pressed="true"] small { color: inherit; }
+.adahead { font-family: var(--font-display); font-weight: 700; font-size: 20px; padding: 8px 2px 0; display: flex; gap: 10px; align-items: baseline; }
+.adahead span { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--muted); }
+.shared { margin-top: 4px; font-size: 14px; color: var(--ink); background: var(--soft); border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 6px; }
+.mk.olc .s.r { font-size: 16px; font-variant-numeric: tabular-nums; }
+.mk.olc svg { width: 26px; height: 26px; }
+.mk.olc[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+.mk.olc[aria-pressed="true"] .t { color: var(--accent); }
+.olcform { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.olcform label { font-weight: 600; font-size: 15px; }
+.olcform input { width: 140px; min-height: 48px; font-size: 20px; border: 2px solid var(--accent); border-radius: 10px; padding: 0 12px; background: var(--surface); font-variant-numeric: tabular-nums; }
+.olcform .err { font-size: 14px; }
+.mk.cam .s.r { position: relative; }
+.mk.cam svg { width: 28px; height: 28px; }
+.mk.cam .phn { position: absolute; top: -6px; right: -14px; background: var(--accent); color: var(--accent-ink); font-style: normal; font-size: 12px; font-weight: 700; border-radius: 10px; padding: 1px 6px; }
+.thumbs { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.thumb { position: relative; width: 84px; height: 84px; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--soft); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .gps { position: absolute; left: 4px; bottom: 4px; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 4px; }
+.phnote { grid-column: 1 / -1; }
+.phnote:empty { display: none; }
+.warnlnk { color: var(--no) !important; }
+.phbox { width: min(980px, 100%); }
+.phbox img { width: 100%; max-height: 70vh; object-fit: contain; background: #000; border-radius: 8px; }
+.syncc { padding: 18px 20px; display: grid; gap: 12px; }
+.syncc[hidden], .card[hidden] { display: none; }
+.syncc h3 { font-size: 20px; }
+.syncc .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.chk { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; min-height: 48px; }
+.chk input { width: 22px; height: 22px; }
+.tsp .by { font-size: 13px; color: var(--muted); }
+.conflist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.conflist li { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.confhead { font-weight: 700; font-size: 15px; }
+.confopt { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 4px 8px; border-radius: 8px; }
+.confopt.on { background: var(--soft); }
+.confopt input { width: 22px; height: 22px; }
+#confNote .warn { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.batchbox { width: min(760px, 100%); }
+.batchlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.batchlist li { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.batchlist img { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; background: var(--soft); }
+.bmeta { display: grid; gap: 6px; font-size: 15px; }
+.bmeta select { min-height: 46px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: var(--soft); max-width: 100%; }
+.okc { color: var(--ok); font-weight: 700; }
+.noc { color: var(--ed); font-weight: 700; }
+.overflag { margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--no); background: var(--no-bg); padding: 6px 10px; border-radius: 6px; }
+.overbtn[aria-pressed="false"] { border-color: var(--no); color: var(--no); }
+.tbsrow { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; padding: 12px 16px; border-left: 6px solid var(--ed); }
+.tbsrow.done { border-left-color: var(--ok); opacity: .85; }
+.tinfo { display: grid; gap: 3px; min-width: 0; }
+.tinfo .ap { font-size: 18px; font-weight: 700; }
+.tinfo .who { font-size: 15px; font-weight: 600; }
+.tinfo .who span { color: var(--muted); font-weight: 500; }
+.chg { font-size: 15px; overflow-wrap: anywhere; }
+.chg .kind { display: inline-block; font-size: 12px; font-weight: 700; color: var(--ed); background: var(--ed-bg); border-radius: 6px; padding: 1px 6px; margin-right: 6px; }
+.tbscheck { display: flex; gap: 10px; align-items: center; font-weight: 700; min-height: 56px; padding: 0 14px; border: 2px solid var(--line); border-radius: 12px; cursor: pointer; }
+.tbscheck input { width: 26px; height: 26px; }
+.tbsrow.done .tbscheck { border-color: var(--ok); color: var(--ok); }
+@media (max-width: 560px) { .tbsrow { grid-template-columns: 1fr; } }
+.syncbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 5; width: min(760px, calc(100% - 24px)); display: flex; gap: 12px; align-items: center; background: var(--ed-bg); color: var(--ed); border: 2px solid var(--ed); border-radius: 14px; padding: 10px 12px 10px 16px; font-weight: 600; box-shadow: var(--shadow); }
+.syncbar[hidden] { display: none; }
+.syncbar span { flex: 1; }
+.diffbox { width: min(820px, 100%); }
+.diffbox h4, #syncLog h4 { margin: 14px 0 6px; font-size: 16px; }
+.diffbox h4.no { color: var(--no); }
+.difflist { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; }
+.difflist li.stale { color: var(--ed); }
+.diffbox hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+.mic { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.mic .btn[aria-pressed="true"] { background: var(--no); border-color: var(--no); color: #fff; }
+.miclive { font-style: italic; color: var(--muted); }
+.gpsok { font-size: 11px; font-weight: 700; color: #fff; background: var(--ok); border-radius: 4px; padding: 1px 5px; }
+.gpsstate.ok { color: var(--ok); }
+.gpsstate.ed { color: var(--ed); font-weight: 600; }
+.install { padding: 14px 18px; display: grid; gap: 10px; background: var(--ed-bg); border-color: var(--ed); }
+.install[hidden] { display: none; }
+.syncbar.upd { background: var(--surface); color: var(--ink); border-color: var(--accent); }
+.subhead { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .05em; padding: 10px 14px 6px; text-transform: uppercase; }
+.prow.koy { grid-template-columns: 1fr auto; padding-left: 16px; }
+.prow.koy .tsp { grid-column: 1 / 3; }
+@media (max-width: 560px) { .prow.koy { grid-template-columns: 1fr; } .prow.koy .marks, .prow.koy .tsp { grid-column: 1 / -1; padding-left: 0; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <button class="btn ghost back" id="backBtn" type="button" aria-label="Listeye dön">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h1>Arazi Tespit</h1>
+    <div class="seg" id="modeSeg" role="group" aria-label="Görünüm" hidden>
+      <button type="button" data-mode="koy" aria-pressed="true">Köy</button>
+      <button type="button" data-mode="ciftci" aria-pressed="false">Çiftçi</button>
+      <button type="button" data-mode="tbs" aria-pressed="false">TBS</button>
+    </div>
+    <span class="grow"></span>
+    <span class="prog" id="prog" hidden><span class="num" id="progTxt"></span><span class="bar"><i id="progBar"></i></span></span>
+    <span class="brk" aria-hidden="true"></span>
+    <span class="savestate" id="saveState" role="status" hidden></span>
+    <button class="btn save" id="saveBtn" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span class="lbl">Kaydet</span>
+    </button>
+    <button class="btn" id="filesBtn" type="button" hidden aria-label="Dosyalar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="lbl">Dosyalar</span>
+    </button>
+    <button class="btn" id="setBtn" type="button" aria-label="Ayarlar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lbl">Ayarlar</span>
+    </button>
+    <button class="btn primary" id="outBtn" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span class="lbl">Tutanak PDF</span>
+    </button>
+  </header>
+
+  <section class="home" id="home">
+    <div class="home-inner">
+      <div class="card drop">
+        <h2>Planlı Üretim Arazi Tespit Tutanağı</h2>
+        <ol class="steps">
+          <li>TBS'den aldığınız “ÇKS Köy Genelinde Parsel Üretim Belgesi” Excel dosyasını yükleyin.</li>
+          <li>Sahada gittiğiniz köyü seçin. Çayır otu beyanları kendiliğinden +, diğer parsellere <b>+</b> ya da <b>−</b> verin.</li>
+          <li>Bütün parselleri işaretlenen çiftçilerin arazi tespit tutanaklarını PDF olarak indirip yazdırın ve imzalayın.</li>
+        </ol>
+        <div class="row">
+          <label class="btn primary" for="fileIn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></svg>Excel yükle
+          </label>
+          <input type="file" id="fileIn" accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" multiple hidden>
+          <button class="btn" type="button" id="toWork" hidden>Çalışmaya dön</button>
+          <span class="status" id="loadStatus" role="status"></span>
+        </div>
+        <p class="note">Excel ve işaretleriniz yalnız bu cihazda saklanır; hiçbir sunucuya gönderilmez. Uygulama kurulduktan sonra internet olmadan açılır, ekran kapanıp açılınca ya da uygulama kapatılınca kaldığınız yerden devam eder. Ekip arkadaşlarınızla bilgileri “Ekip eşitlemesi” dosyasıyla paylaşırsınız.</p>
+      </div>
+      <div class="card install" id="installCard" hidden>
+        <b>Uygulamayı bu cihaza kurun:</b> Chrome menüsünden (⋮) <b>“Ana ekrana ekle”</b> ya da <b>“Uygulamayı yükle”</b>yi seçin. Sonra her zaman ana ekrandaki simgeden açın; internetsiz de çalışır.
+        <button class="btn primary" type="button" id="installBtn" hidden>Uygulamayı yükle</button>
+      </div>
+      <div class="card syncc" id="syncCard" hidden>
+        <h3>Ekip eşitlemesi</h3>
+        <p class="note">Her cihaz gün sonunda bir eşitleme dosyası çıkarıp merkezdeki cihaza gönderir (kablo, Bluetooth ya da WhatsApp). Merkezde dosyalar yüklenince bütün işaretler, ölçümler ve fotoğraflar birleşir; aynı parsele iki kişi işaret verdiyse en son verilen geçerli olur. Merkezin çıkardığı dosyayı ekiplere geri yüklerseniz herkes bütün işleri görür. Dosyada TC, ad ve ada/parsel açık yazılmaz; ama fotoğrafların bilgi şeridinde çiftçi adı vardır.</p>
+        <div class="row">
+          <button class="btn primary" type="button" id="syncOut">Eşitleme dosyası çıkar</button>
+          <label class="chk"><input type="checkbox" id="syncPh" checked> Fotoğraflar dahil (<span id="syncPhN">0</span>)</label>
+          <label class="btn" for="syncIn">Eşitleme dosyası yükle</label>
+          <input type="file" id="syncIn" accept=".json,application/json" multiple hidden>
+        </div>
+        <div id="syncMsg" role="status"></div>
+        <div id="confNote" hidden></div>
+        <div id="syncLog"></div>
+      </div>
+      <div class="card saved" id="savedCard" hidden>
+        <h3>Yüklü dosyalar</h3>
+        <ul id="savedList"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="work show-list" id="work" hidden>
+    <aside class="side">
+      <div class="search"><input type="search" id="q" placeholder="Ada/parsel ya da ad" aria-label="Ara"></div>
+      <div class="chips" id="chips" role="group" aria-label="Köy süzgeci"></div>
+      <ul class="flist" id="flist"></ul>
+      <div class="foot" id="saveNote"></div>
+      <div class="foot gpsstate" id="gpsState" hidden></div>
+    </aside>
+    <main class="main" id="main"><div class="main-inner" id="detail"></div></main>
+  </section>
+</div>
+
+<div class="dlg" id="dlgEdit" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <form class="box" id="edForm">
+    <h3 id="edTitle">Tespiti düzenle</h3>
+    <p class="note" id="edSub"></p>
+    <div class="field"><label for="edUrun">Ürün adı (17)</label><input id="edUrun" list="urunList" autocomplete="off"></div>
+    <datalist id="urunList"></datalist>
+    <div class="field"><label for="edAlan">Alan, da (18) — beyandan farklıysa ölçüm sayılır</label><input id="edAlan" inputmode="decimal" autocomplete="off"></div>
+    <div class="field"><label for="edAcik">Açıklama (21)</label><textarea id="edAcik"></textarea>
+      <div class="mic"><button class="btn" type="button" id="micBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="micLbl">Sesle yaz</span></button>
+      <span class="miclive" id="micLive" aria-live="polite"></span><span class="note" id="micHint"></span></div></div>
+    <div class="acts">
+      <button class="btn danger left" type="button" id="edClear">İşareti kaldır</button>
+      <button class="btn" type="button" data-close>Vazgeç</button>
+      <button class="btn primary" type="submit">Kaydet</button>
+    </div>
+  </form>
+</div>
+
+<div class="dlg" id="dlgSet" hidden role="dialog" aria-modal="true" aria-labelledby="stTitle">
+  <form class="box" id="stForm">
+    <h3 id="stTitle">Ayarlar</h3>
+    <fieldset>
+      <legend>− verilen parsellere yazılacaklar</legend>
+      <div class="field"><label for="stUrun">Ürün adı (17)</label><input id="stUrun" autocomplete="off"></div>
+      <div class="field"><label for="stAcik">Açıklama (21)</label><input id="stAcik" autocomplete="off"></div>
+      <p class="note">Alan (18) beyan edilen alandan alınır, planlamaya uygunluk (15, 19) her zaman “Uygun” yazılır. Buradaki değişiklik − verilmiş bütün parsellere uygulanır.</p>
+    </fieldset>
+    <fieldset>
+      <legend>İmza bölümü</legend>
+      <div class="grid2">
+        <div class="field"><label for="stP1">Teknik Personel</label><input id="stP1" autocomplete="off"></div>
+        <div class="field"><label for="stP2">Teknik Personel</label><input id="stP2" autocomplete="off"></div>
+        <div class="field"><label for="stP3">CBS Sorumlusu</label><input id="stP3" autocomplete="off"></div>
+        <div class="field"><label for="stMod">Tarih</label>
+          <select id="stMod">
+            <option value="bos">Boş bırak, elle yazılacak</option>
+            <option value="son">Çiftçinin son arazi tespit günü</option>
+            <option value="sabit">Aşağıdaki tarih</option>
+          </select></div>
+      </div>
+      <div class="field" id="stTarihF"><label for="stTarih">Sabit tarih</label>
+        <div style="display:flex;gap:8px"><input id="stTarih" placeholder="gg.aa.yyyy" inputmode="numeric" autocomplete="off"><button class="btn" type="button" id="stToday">Bugün</button></div></div>
+      <p class="note">Ad boş bırakılırsa elle doldurulur. “Son arazi tespit günü”, çiftçinin parsellerine en son + ya da − verilen gündür; parsellerin hepsi çayır otuysa PDF'in indirildiği gün yazılır.</p>
+    </fieldset>
+    <div class="acts">
+      <button class="btn" type="button" data-close>Vazgeç</button>
+      <button class="btn primary" type="submit">Kaydet</button>
+    </div>
+  </form>
+</div>
+
+<div class="dlg" id="dlgAsk" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
+  <div class="box">
+    <h3 id="askTitle"></h3>
+    <p id="askText" style="margin:0"></p>
+    <div class="acts">
+      <button class="btn" type="button" data-close>Vazgeç</button>
+      <button class="btn primary" type="button" id="askOk"></button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg" id="dlgOut" hidden role="dialog" aria-modal="true" aria-labelledby="outTitle">
+  <div class="box">
+    <h3 id="outTitle">Tutanak PDF</h3>
+    <div class="sum" id="outSum"></div>
+    <div class="grid2">
+      <div class="field"><label for="outKoy">Çiftçinin köyü</label><select id="outKoy"></select></div>
+      <div class="field"><label for="outDone">Hangi çiftçiler</label>
+        <label style="display:flex;gap:10px;align-items:center;min-height:48px;font-weight:600"><input type="checkbox" id="outDone" checked style="width:22px;height:22px"> Yalnız tutanağı tamam olanlar</label></div>
+    </div>
+    <p class="status num" id="outCount"></p>
+    <p class="note">Çiftçinin köyü, parsellerinin çoğunun bulunduğu köydür; tutanağın 3. satırına da bu yazılır. PDF'te her çiftçi yeni sayfadan başlar; Excel'de her çiftçi ayrı bir sayfa (sekme) olur ve elle düzeltilebilir. PDF, o ana kadarki bütün işaretlerin yedeğini de taşır.</p>
+    <div id="outMsg" role="status"></div>
+    <div class="acts">
+      <button class="btn" type="button" data-close>Kapat</button>
+      <button class="btn" type="button" id="outXlsx">Excel olarak indir</button>
+      <button class="btn primary" type="button" id="outGo">PDF olarak indir</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg" id="dlgConf" hidden role="dialog" aria-modal="true" aria-labelledby="confTitle">
+  <div class="box">
+    <h3 id="confTitle">Çakışmalar</h3>
+    <p class="note">Aynı parsele iki kişi farklı işaret vermiş. Doğru olanı seçin; seçiminiz bir sonraki eşitleme dosyasıyla bütün cihazlara geçer.</p>
+    <ul class="conflist" id="confList"></ul>
+    <div class="acts"><button class="btn" type="button" data-close>Sonra bakarım</button><button class="btn primary" type="button" id="confDone">Seçimleri kaydet</button></div>
+  </div>
+</div>
+<div class="syncbar" id="syncBar" hidden role="status"><span id="syncBarTxt"></span><button class="btn primary" type="button" id="syncBarBtn">Eşitleme dosyası çıkar</button></div>
+<div class="dlg" id="dlgDiff" hidden role="dialog" aria-modal="true" aria-labelledby="diffTitle">
+  <div class="box diffbox">
+    <h3 id="diffTitle">Yeni liste yüklendi: neler değişti</h3>
+    <p class="note">Yeni Excel, aynı köyleri kapsayan eski listenin yerine geçti.</p>
+    <div id="diffBody"></div>
+    <div class="acts"><button class="btn primary" type="button" id="diffClose" data-close>Tamam</button></div>
+  </div>
+</div>
+<input type="file" id="batchIn" accept="image/jpeg,.jpg,.jpeg,application/octet-stream" multiple hidden>
+<div class="dlg" id="dlgBatch" hidden role="dialog" aria-modal="true" aria-labelledby="batchTitle">
+  <div class="box batchbox">
+    <h3 id="batchTitle">Kameradaki fotoğrafları ekle</h3>
+    <p class="note">Her fotoğraf, çekildiği saate en yakın verdiğiniz işarete (bu tablette) eşlendi. Yanlış eşlenen varsa parseli listeden değiştirin; eklenmesini istemediğinizi “Ekleme” yapın.</p>
+    <p class="status num" id="batchSum"></p>
+    <ul class="batchlist" id="batchList"></ul>
+    <div class="acts"><button class="btn" type="button" data-close>Vazgeç</button><button class="btn primary" type="button" id="batchGo">Ekle</button></div>
+  </div>
+</div>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="galIn" accept="image/jpeg,.jpg,.jpeg,application/octet-stream" hidden>
+<div class="dlg" id="dlgPhoto" hidden role="dialog" aria-modal="true" aria-label="Fotoğraf">
+  <div class="box phbox">
+    <img id="phImg" alt="Parsel fotoğrafı">
+    <p class="note" id="phInfo"></p>
+    <p class="status" id="phMsg" role="status"></p>
+    <div class="acts">
+      <button class="btn danger left" type="button" id="phDel">Sil</button>
+      <button class="btn" type="button" id="phDl">JPG indir</button>
+      <button class="btn primary" type="button" id="phClose">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div class="syncbar upd" id="updBar" hidden role="status"><span>Uygulamanın yeni sürümü indirildi.</span><button class="btn primary" type="button" id="updBtn">Şimdi yenile</button></div>
+<script>
+  // Çevrimdışı çalışma: uygulama dosyaları cihazda saklanır.
+  (function () {
+    if (!('serviceWorker' in navigator)) return;
+    let waiting = null, reloading = false;
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      function watch(w) { w.addEventListener('statechange', function () { if (w.state === 'installed' && navigator.serviceWorker.controller) { waiting = w; document.getElementById('updBar').hidden = false; } }); }
+      if (reg.waiting && navigator.serviceWorker.controller) { waiting = reg.waiting; document.getElementById('updBar').hidden = false; }
+      if (reg.installing) watch(reg.installing);
+      reg.addEventListener('updatefound', function () { watch(reg.installing); });
+      setInterval(function () { if (navigator.onLine) reg.update().catch(function () {}); }, 30 * 60000);
+    }).catch(function () {});
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (!reloading) { reloading = true; location.reload(); } });
+    document.getElementById('updBtn').addEventListener('click', function () { if (waiting) waiting.postMessage('skipWaiting'); });
+    // Kurulum düğmesi (Chrome destekliyorsa)
+    var promptEv = null;
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (!standalone) document.getElementById('installCard').hidden = false;
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); promptEv = e; document.getElementById('installBtn').hidden = false; });
+    document.getElementById('installBtn').addEventListener('click', function () { if (promptEv) { promptEv.prompt(); promptEv = null; } });
+    window.addEventListener('appinstalled', function () { document.getElementById('installCard').hidden = true; });
+  })();
+</script>
+<script src="pdf-lib.min.js"></script>
+<script src="jszip.min.js"></script>
+<script src="font.js"></script>
+<script src="core.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

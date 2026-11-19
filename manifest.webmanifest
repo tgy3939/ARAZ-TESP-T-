@@ -1,0 +1,15 @@
+{
+  "name": "Arazi Tespit Tutanağı",
+  "short_name": "Arazi Tespit",
+  "description": "ÇKS arazi kontrolü: köy ve ada bazında tespit, fotoğraf, tutanak PDF/Excel, ekip eşitlemesi.",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eceff0",
+  "theme_color": "#1c4d6b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
